@@ -1,0 +1,34 @@
+services:
+
+  client:
+    build:
+      context: icap-client
+      dockerfile: Dockerfile
+    ports:
+      - 80:5000
+    depends_on:
+      - detect
+    volumes:
+      - type: bind
+        source: ./detect-mock/samples
+        target: /samples
+
+  detect:
+    image: glimpsre/icap-detect:v0.2.1
+    command: -verbose -timeout=3s
+    environment:
+      - TOKEN=00000000-00000000-00000000-00000000-00000000
+      - HOST=http://api:5000
+      - TIMEOUT=1m10s
+      - TAG=mock
+    ports:
+      - 1344:1344
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: detect-mock
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
