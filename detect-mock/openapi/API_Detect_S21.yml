@@ -871,7 +871,8 @@ components:
       description: status of a profile
       properties:
         daily_quota:
-          $ref: "../../../shared/schemas.yml#/components/schemas/daily_quota"
+          type: integer
+          example: 10000
         available_daily_quota:
           type: integer
           description: |
