@@ -14,7 +14,7 @@ services:
         target: /samples
 
   detect:
-    image: glimpsre/icap-detect:v0.2.1
+    image: glimpsre/icap-detect:v0.2.2
     command: -verbose -timeout=3s
     environment:
       - TOKEN=00000000-00000000-00000000-00000000-00000000

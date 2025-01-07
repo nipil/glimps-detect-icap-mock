@@ -1,4 +1,4 @@
-FROM glimpsre/icap-detect:v0.2.1 AS detect
+FROM glimpsre/icap-detect:v0.2.2 AS detect
 
 FROM debian:bookworm-slim
 

@@ -1,6 +1,6 @@
 # glimps detect mock
 
-How to use :
+## How to use
 
     docker-compose down --rmi local
 
@@ -25,3 +25,17 @@ How to use :
         c-icap-client -i detect -p 1344 -v -f /samples/not-found.json
 
 See `detect-mock\README.md` for expected output.
+
+## TODO
+
+Tester avec le client c-icap debian 11 bullseye
+
+Et pour guider l'intégration dans nos applications internes :
+
+- développer un POC java en CLI
+- développer un POC php en CLI
+
+Ou simplement spécifier aux TMA :
+
+- d'installer le package debian  `c-icap`
+- de développer un worker applicatif qui lance la cli `c-icap-client` et analyse son retour
