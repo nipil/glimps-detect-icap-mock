@@ -289,6 +289,174 @@ Cache bypass forbidden :
     }
     curl: (22) The requested URL returned error: 403
 
+## Testing with `c-icap-client`
+
+Usage :
+
+    c-icap-client [-V ] [-VV ] [-i icap_servername] [-p port] [-s service] [-tls ] [-tls-method tls_method] [-tls-no-verify ] [-f filename] [-o filename] [-method method] [-req url] [-resp url] [-d level] [-noreshdr ] [-nopreview ] [-no204 ] [-206 ] [-x xheader] [-hx xheader] [-rhx xheader] [-w preview] [-v ]
+    
+    -V                      : Print version and exits
+    -VV                     : Print version and build informations and exits
+    -i icap_servername              : The icap server name
+    -p port         : The server port
+    -s service              : The service name
+    -tls                    : Use TLS
+    -tls-method tls_method          : Use TLS method
+    -tls-no-verify                  : Disable server certificate verify
+    -f filename             : Send this file to the icap server.
+    Default is to send an options request
+    -o filename             : Save output to this file.
+    Default is to send to stdout
+    -method method          : Use 'method' as method of the request modification
+    -req url                : Send a request modification instead of response modification
+    -resp url               : Send a responce modification request with request url the 'url'
+    -d level                : debug level info to stdout
+    -noreshdr                       : Do not send reshdr headers
+    -nopreview                      : Do not send preview data
+    -no204                  : Do not allow204 outside preview
+    -206                    : Support allow206
+    -x xheader              : Include xheader in icap request headers
+    -hx xheader             : Include xheader in http request headers
+    -rhx xheader            : Include xheader in http response headers
+    -w preview              : Sets the maximum preview data size
+    -v                      : Print response headers
+
+Try to provide additionnal data (and use maximum debug) :
+
+    c-icap-client -i 127.0.0.1 -p 1344 -v -f samples/malware-nocache.json -d 10 \
+        -x "x1: foo" -x "x2: bar" -rhx "rhx1: aze" -rhx "rhx2: qsd" -s toto
+
+    OK done with options!
+    ICAP server:127.0.0.1, ip:127.0.0.1, port:1344
+
+    Preview:-1 keepalive:0,allow204:0
+    OK allocating request going to send request
+    Allocate a new entity of type 1
+    Allocate a new entity of type 3
+    Going to add 6 response headers
+    Add resp header: HTTP/1.0 200 OK
+    Add resp header: Date: Fri Jan 10 17:28:24 2025
+    Add resp header: Last-Modified: Fri Jan 10 17:28:24 2025
+    Add resp header: Content-Length: 22
+    Add resp header: rhx1: aze
+    Add resp header: rhx2: qsd
+    Response was with status:200 
+    Get entity from trash....
+    Get entity from trash....
+    OK reading headers, going to read body
+
+    ICAP HEADERS:
+            ICAP/1.0 200 OK
+            Connection: close
+            Date: Fri, 10 Jan 2025 17:28:24 GMT
+            Istag: "WEBFILTER"
+            Service: GMalware-detect-0.2.4
+            Encapsulated: res-hdr=0, res-body=26
+
+    RESPMOD HEADERS:
+            HTTP/1.1 403 Forbidden
+
+    Done
+
+Seen headers and payload in mock api :
+
+    Headers {"Host": "127.0.0.1:5000", "User-Agent": "Go-http-client/1.1", "X-Auth-Token": "00000000-00000000-00000000-00000000-00000000", "Accept-Encoding": "gzip"}
+    Form {"tags": "ICAP"}
+
+Use `tcpdump` to check what goes on the wire :
+
+- service (`toto`) is ignored on icap-detect side
+- icap headers (`-x`) are not forwarded to api, nor logged in `icap-detect`
+- request headers (`-hx`) are not forwarded to api (that is OK, as we work in RESPmod !), nor logged in `icap-detect`
+- response headers (`-rhx`) are not forwarded to api (even if we work in RESPmod), nor logged in `icap-detect`
+
+Example network capture :
+
+    OPTIONS icap://127.0.0.1/toto ICAP/1.0
+    Host: 127.0.0.1
+    User-Agent: C-ICAP-Client-Library/0.5.10
+    x1: foo
+    x2: bar
+    Encapsulated: null-body=0
+
+
+    ICAP/1.0 200 OK
+    Allow: 204
+    Connection: close
+    Date: Fri, 10 Jan 2025 17:28:24 GMT
+    Istag: "WEBFILTER"
+    Methods: RESPMOD, REQMOD
+    Service: GMalware-detect-0.2.4
+    Transfer-Preview: *
+    Encapsulated: null-body=0
+
+
+    RESPMOD icap://127.0.0.1/toto ICAP/1.0
+    Host: 127.0.0.1
+    User-Agent: C-ICAP-Client-Library/0.5.10
+    Allow: 204
+    x1: foo
+    x2: bar
+    Encapsulated: res-hdr=0, res-body=134
+
+    HTTP/1.0 200 OK
+    Date: Fri Jan 10 17:28:24 2025
+    Last-Modified: Fri Jan 10 17:28:24 2025
+    Content-Length: 22
+    rhx1: aze
+    rhx2: qsd
+
+    16
+    {
+    "malware": true
+    }
+
+    0
+
+
+    ICAP/1.0 200 OK
+    Connection: close
+    Date: Fri, 10 Jan 2025 17:28:24 GMT
+    Istag: "WEBFILTER"
+    Service: GMalware-detect-0.2.4
+    Encapsulated: res-hdr=0, res-body=26
+
+    HTTP/1.1 403 Forbidden
+
+    0
+
+## Suggestions for `icap-detect`
+
+### Client-provided token
+
+**Proposal** : dynamically forward provided `X-Auth-Token` ICAP header (provided by `-x`) token to Detect API
+
+Bundling an `icap-detect` instance in each platform to tune instance parameters "per-platform" is easy and efficient
+when using containers, as deployment, configuration and upgrade is convenient, and lightweight.
+
+When using VMs, bundling the binary or creating a dedicated VM in each platform, just to be able to be able to
+tune the parameters of the running `icap-detect` "per-platform" is inefficient (dedicated VM) or makes upgrading
+`icap-detect` instances troublesome (when bundling in application VM).
+
+This proposal would allow differentiating client token (quotas/policy/processing...), while allowing for a
+centralized `icap-detect` instance, making maintenance and deployment of the `icap-detect` server easier.
+
+### Client-provided tags
+
+**Proposal** : dynamically forward tags present in `X-Additionnal-Tags` response header (provided by `-rhx`)
+
+This would allow for clients to submit additionnal (_non-authoritative_) metadata to Detect API submissions.
+
+### Logging of client-provided information
+
+**Proposal** : log information about the ICAP client
+
+- authoritative client IP from TCP connection source
+- _non-autoritative_ `X-Additionnal-Tags` response header
+- _non-autoritative_ `X-Forwarded-For` response header
+
+This would allow attributing scan results to sources through `icap-detect` logs.
+
 ## Usage and log examples of `icap-detect`
 
 Sample usage :
