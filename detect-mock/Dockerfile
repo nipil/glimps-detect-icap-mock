@@ -1,4 +1,4 @@
-FROM glimpsre/icap-detect:v0.2.2 AS detect
+FROM glimpsre/icap-detect:v0.2.4 AS detect
 
 FROM debian:bookworm-slim
 
@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
 apt-get -y upgrade && \
-apt-get -y install python3-flask curl c-icap musl && \
+apt-get -y install python3-flask curl c-icap && \
 rm -rf /var/lib/apt/lists/*
 
 COPY mock.py /

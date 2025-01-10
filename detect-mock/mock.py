@@ -183,11 +183,7 @@ def search_sha(sha256: str):
     sha256 = sha256.lower()
     # check cache miss
     if sha256 not in SUBMISSIONS_BY_SHA256:
-        # FIXME: icap-detect does not seem to handle json response on cache miss ?!
-        # {"level":"error","msg":"err: invalid response from endpoint, 404 NOT FOUND: {\n  \"error\": \"not found\",\n  \"status\": false\n}\n","time":"2025-01-07T13:54:14Z"}
-        # Resort to "text/html; charset=utf-8" error page ... which does not trigger an error in icap-detect log, contrary to of "application/json" as specified in openapi.
-        # return response_not_found()
-        raise NotFound()
+        return response_not_found()
     # cache hit
     submission = SUBMISSIONS_BY_SHA256[sha256]
     return submission.to_result(), 200

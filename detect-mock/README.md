@@ -179,8 +179,6 @@ Check for cache miss :
     }
     curl: (22) The requested URL returned error: 404
 
-NOTE: as per `FIXME` in the mock-app code, the actual 'miss' answer is different from what the openapi spec requires.
-
 Submits file :
 
     curl --fail-with-body --request POST -H "X-Auth-Token: 00000000-00000000-00000000-00000000-00000000" --form "file=@samples/cached-legit.json" localhost:5000/api/lite/v2/submit
