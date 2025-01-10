@@ -1,11 +1,11 @@
 import hashlib
 import json
+import os
 import time
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
 from flask import Flask, request
-from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
 
@@ -147,6 +147,24 @@ class Submission:
         }
 
 
+def debug_headers():
+    if os.environ.get('DEBUG_HEADERS', None):
+        headers = {key: value for key, value in request.headers.items()}
+        print("Headers", json.dumps(headers))
+
+
+def debug_forms():
+    if os.environ.get('DEBUG_FORMS', None):
+        form = request.form.to_dict()
+        if len(form) > 0:
+            print("Form", json.dumps(form))
+
+
+def env_debug_hooks():
+    debug_headers()
+    debug_forms()
+
+
 def sha256sum(data: bytes):
     m = hashlib.sha256()
     m.update(data)
@@ -176,6 +194,7 @@ class Token:
 
 @app.route(f"/{BASE_PATH}/search/<sha256>")
 def search_sha(sha256: str):
+    env_debug_hooks()
     # validate token anyway
     if not Token.from_request().is_valid():
         return response_invalid_token()
@@ -191,6 +210,7 @@ def search_sha(sha256: str):
 
 @app.route(f"/{BASE_PATH}/submit", methods=['POST'])
 def submit():
+    env_debug_hooks()
     # validate token anyway
     if not Token.from_request().is_valid():
         return response_invalid_token()
@@ -225,6 +245,7 @@ def submit():
 
 @app.route(f"/{BASE_PATH}/results/<identifier>")
 def result_uuid(identifier: str):
+    env_debug_hooks()
     # validate token anyway
     if not Token.from_request().is_valid():
         return response_invalid_token()
@@ -245,6 +266,7 @@ def result_uuid(identifier: str):
 
 
 def not_yet_implemented():
+    env_debug_hooks()
     # validate token anyway
     if not Token.from_request().is_valid():
         return response_invalid_token()
